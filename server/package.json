@@ -1,0 +1,24 @@
+{
+  "name": "weather-app-server",
+  "version": "1.0.0",
+  "description": "Backend for the weather app technical assessment (Express + MongoDB)",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "js2xmlparser": "^5.0.0",
+    "mongodb": "^7.6.0",
+    "mongoose": "^8.5.0",
+    "node-fetch": "^3.3.2",
+    "pdfkit": "^0.15.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
