@@ -1,96 +1,128 @@
-# Skyline — Weather App (Full-Stack Technical Assessment)
+# Skyline — Full-Stack Weather App
 
-A full-stack weather lookup app built for the take-home assessment: React
-(Vite) frontend, Express + MongoDB backend, CRUD persistence, extra API
-integration, and multi-format data export.
+A full-stack weather lookup and tracking app built as a technical assessment.
+Users can search weather by city, zip code, GPS coordinates, or their current
+location; save and manage weather records for custom date ranges (CRUD); and
+export saved data in multiple formats.
 
-## What it covers
+## Tech Stack
 
-**Tech Assessment 1 (Frontend)**
-- Location entry by city/town name, US zip code, GPS coordinates, or "use my
-  location" (browser geolocation) — resolved by the backend.
-- Current conditions with temperature, feels-like, humidity, wind, and
-  precipitation, plus a 5-day forecast strip.
-- Responsive layout (grid collapses to a single column under 640px) and
-  graceful error states (bad location, provider errors, geolocation denied).
-- Built with React + Vite (no Python/Java frameworks).
+- **Frontend:** React (Vite) — no Python/Java frameworks
+- **Backend:** Node.js + Express
+- **Database:** MongoDB (via Mongoose)
+- **Weather data:** [Open-Meteo](https://open-meteo.com/) — free, no API key required, supports both forecast and historical date ranges
+- **Extras:** Google Maps (link + embed, no key required), YouTube Data API v3 (optional key, graceful fallback if not provided)
 
-**Tech Assessment 2 (Backend)**
-- Full CRUD on saved weather records (`/api/records`), each covering a
-  location + date range, with server-side date-range and location
-  validation (fuzzy geocoding match — see `services/geoService.js`).
-- RESTful API design; MongoDB via Mongoose for persistence.
-- 2.2 API Integration: Google Maps (embed + link, no API key required) and
-  YouTube (real search results if `YOUTUBE_API_KEY` is set, otherwise a
-  graceful fallback search link — no hard dependency on a paid key).
-- 2.3 Data Export: `/api/records/export/all?format=` supports `json`, `xml`,
-  `csv`, `markdown`, and `pdf`.
+## Features
 
-Weather data comes from [Open-Meteo](https://open-meteo.com/) (no API key
-needed, supports both forecast and historical date ranges, which is what
-makes the CRUD date-range feature work for past *and* upcoming dates).
+**Frontend**
+- Location entry by city/town, zip code, GPS coordinates, or landmark
+- "Use my location" via browser geolocation
+- Current conditions (temperature, feels-like, humidity, wind, precipitation) with icons
+- 5-day forecast
+- Graceful error handling (invalid location, failed requests, denied location permission)
+- Responsive layout
+- Real, live API data — nothing static
 
-## Project structure
+**Backend**
+- Full CRUD on saved weather records (create, read, update, delete), each covering a location + custom date range
+- Server-side validation for date ranges and location existence (fuzzy-matched geocoding)
+- RESTful API design
+- MongoDB persistence via Mongoose
+- Additional API integration: Google Maps + YouTube video results for the searched location
+- Data export in JSON, XML, CSV, Markdown, and PDF formats
 
+## Prerequisites
+
+- [Node.js](https://nodejs.org) v18 or later (includes npm)
+- A MongoDB database — either a local `mongod` instance or a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster
+
+## Requirements / Dependencies
+
+See [REQUIREMENTS.md](./REQUIREMENTS.md) for the full list of libraries/packages
+used and what each one does. Running `npm install` in `client/` and `server/`
+installs everything automatically — see Setup below.
+
+## Setup Instructions
+
+### 1. Clone the repo
+
+```bash
+git clone <your-repo-url>
+cd <repo-folder>
 ```
-weather-app/
-├── client/          React + Vite frontend
-└── server/          Express + MongoDB backend
-```
 
-## Setup
-
-### 1. Backend
+### 2. Backend
 
 ```bash
 cd server
 npm install
-cp .env.example .env   # then edit MONGODB_URI if needed
-npm run dev             # http://localhost:5000
+cp .env.example .env
 ```
 
-You need a MongoDB instance — either local (`mongod` running on
-`localhost:27017`) or a free [MongoDB Atlas](https://www.mongodb.com/atlas)
-cluster (paste its connection string into `MONGODB_URI`).
+Edit `.env` and set your MongoDB connection string:
 
-`YOUTUBE_API_KEY` in `.env` is optional. Without it, the YouTube panel
-falls back to a plain search link instead of an API-backed result list.
+```
+MONGODB_URI=your_connection_string_here
+PORT=5000
+YOUTUBE_API_KEY=            # optional — leave blank for fallback search links
+CLIENT_ORIGIN=http://localhost:5173
+```
 
-### 2. Frontend
+Start the backend:
+
+```bash
+npm run dev
+```
+
+You should see `[db] connected -> ...` and `Server listening on http://localhost:5000`.
+
+### 3. Frontend
+
+In a second terminal:
 
 ```bash
 cd client
 npm install
-npm run dev              # http://localhost:5173
+npm run dev
 ```
 
-The Vite dev server proxies `/api/*` to `http://localhost:5000`, so run the
-backend first (or alongside).
+Open `http://localhost:5173` in your browser. The dev server proxies
+`/api/*` requests to the backend on port 5000.
 
-## API quick reference
+## Project Structure
+
+```
+├── client/          React + Vite frontend
+│   └── src/
+│       ├── components/    UI components (search, current weather, forecast, records)
+│       └── api.js         Fetch wrapper for backend calls
+└── server/          Express + MongoDB backend
+    ├── config/         Database connection
+    ├── models/         Mongoose schemas
+    ├── routes/         Express route handlers
+    └── services/       Geocoding, weather-fetching, and export logic
+```
+
+## API Reference
 
 | Method | Route | Purpose |
 |---|---|---|
 | GET | `/api/weather?location=<text>` | Current + 5-day forecast for a place name/zip/coords |
 | GET | `/api/weather?lat=&lon=` | Same, from raw coordinates |
-| POST | `/api/records` | Create — `{ location, startDate, endDate, notes? }` |
-| GET | `/api/records` | Read — list all saved records |
-| GET | `/api/records/:id` | Read — one record |
-| PUT | `/api/records/:id` | Update — `{ notes?, startDate?, endDate? }` |
+| POST | `/api/records` | Create a saved record — `{ location, startDate, endDate, notes? }` |
+| GET | `/api/records` | List all saved records |
+| GET | `/api/records/:id` | Get one record |
+| PUT | `/api/records/:id` | Update a record's notes/date range |
 | DELETE | `/api/records/:id` | Delete a record |
 | GET | `/api/records/export/all?format=json\|xml\|csv\|markdown\|pdf` | Export all records |
 
 ## Notes on design decisions
 
-- **Location resolution** (`server/services/geoService.js`) auto-detects the
-  input shape: `lat,lon` pairs are used directly, 5-digit strings are tried
-  against a US zip geocoder, and everything else goes through Open-Meteo's
-  fuzzy-matching place search. This satisfies the "validate the location
-  really exists (or fuzzy match)" requirement without forcing the user to
-  pick a format up front.
-- **Editing a record** only allows changing the date range and notes, not
-  the location — re-editing the location would really be a new lookup, and
-  keeping it fixed keeps a record's history meaningful.
-- Both the current/forecast lookup and the CRUD create/update paths hit the
-  same Open-Meteo-backed weather service, so the assessment's "no static
-  data" requirement holds throughout.
+- Location resolution auto-detects input type (coordinates, US zip, or place
+  name) and validates/fuzzy-matches it against a real geocoding service.
+- Editing a saved record only allows changing the date range and notes, not
+  the original location — keeps each record's history meaningful.
+- Weather data comes from the same provider for both the live lookup and the
+  CRUD date-range feature, satisfying the "no static data" requirement
+  throughout. throughout.
